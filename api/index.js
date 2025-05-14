@@ -26,7 +26,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 // ✅ Add this block before any API routes
-const allowedOrigins = ['https://roaring-cajeta-9c98b2.netlify.app'];
+const allowedOrigins = ['https:// bucolic-creponne-5c7266.netlify.app'];
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) {
