@@ -25,7 +25,7 @@ export default function FavoriteListings() {
 
         for (const id of favoriteIds) {
           try {
-            const res = await axios.get(`/api/listing/get/${id}`);
+            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/listing/get/${id}`);
             listings.push(res.data);
           } catch (err) {
             console.error(`❌ Failed to fetch listing ${id}:`, err.message);

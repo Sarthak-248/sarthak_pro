@@ -18,8 +18,8 @@ const RecentlyVisited = () => {
         console.log('Fetching listings with IDs:', ids);
         const results = await Promise.all(
           ids.map(async (id) => {
-            console.log(`Fetching listing: /api/listing/${id}`);
-            const res = await fetch(`/api/listing/get/${id}`);
+            
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/listing/get/${id}`);
             console.log(`Response for listing ${id}:`, res);
             if (!res.ok) {
               throw new Error(`Failed to fetch listing ${id}`);
