@@ -26,7 +26,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 // ✅ Correct CORS setup
-const allowedOrigins = ['https://radiant-sunburst-d88b01.netlify.app']; // ✅ Make sure this is your actual Netlify domain
+const allowedOrigins = ['https://admirable-wisp-dce5af.netlify.app']; // ✅ Make sure this is your actual Netlify domain
 
 app.use(cors({
   origin: function (origin, callback) {
