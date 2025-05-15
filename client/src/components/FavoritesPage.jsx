@@ -25,7 +25,7 @@ export default function FavoriteListings() {
 
         for (const id of favoriteIds) {
           try {
-            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/listing/get/${id}`);
+            const res = await axios.get(`/api/listing/get/${id}`);
             listings.push(res.data);
           } catch (err) {
             console.error(`❌ Failed to fetch listing ${id}:`, err.message);
@@ -59,8 +59,8 @@ export default function FavoriteListings() {
 
   return (
     <div className="p-4 bg-gradient-to-b from-blue-900 via-black to-blue-900 min-h-screen">
-      <h2 className="text-2xl mt-6 text-center text-white font-semibold mb-6">
-        Favourite Listings
+      <h2 className="text-4xl mt-6 text-center text-yellow-400 font-bold mb-10">
+        ★ Favourite Listings ★
       </h2>
 
       {favorites.length === 0 ? (

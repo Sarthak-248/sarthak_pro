@@ -15,13 +15,18 @@ export default function Search() {
     offer: false,
     sort: 'created_at',
     order: 'desc',
+    bedrooms: 'any',
+    bathrooms: 'any',
   });
 
   const [loading, setLoading] = useState(false);
   const [listings, setListings] = useState([]);
-  const [showMore, setShowMore] = useState(false);
   const [compareMode, setCompareMode] = useState(false);
   const [selectedListings, setSelectedListings] = useState([]);
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const listingsPerPage = 4;
 
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
@@ -32,6 +37,8 @@ export default function Search() {
     const offerFromUrl = urlParams.get('offer');
     const sortFromUrl = urlParams.get('sort');
     const orderFromUrl = urlParams.get('order');
+    const bedroomsFromUrl = urlParams.get('bedrooms');
+    const bathroomsFromUrl = urlParams.get('bathrooms');
 
     if (
       searchTermFromUrl ||
@@ -40,7 +47,9 @@ export default function Search() {
       furnishedFromUrl ||
       offerFromUrl ||
       sortFromUrl ||
-      orderFromUrl
+      orderFromUrl ||
+      bedroomsFromUrl ||
+      bathroomsFromUrl
     ) {
       setSidebardata({
         searchTerm: searchTermFromUrl || '',
@@ -50,17 +59,16 @@ export default function Search() {
         offer: offerFromUrl === 'true',
         sort: sortFromUrl || 'created_at',
         order: orderFromUrl || 'desc',
+        bedrooms: bedroomsFromUrl || 'any',
+        bathrooms: bathroomsFromUrl || 'any',
       });
     }
 
     const fetchListings = async () => {
       setLoading(true);
-      setShowMore(false);
       const searchQuery = urlParams.toString();
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/listing/get?${searchQuery}`);
-      console.log(res);
+      const res = await fetch(`/api/listing/get?${searchQuery}`);
       const data = await res.json();
-      setShowMore(data.length > 8);
       setListings(data);
       setLoading(false);
     };
@@ -69,23 +77,23 @@ export default function Search() {
   }, [location.search]);
 
   const handleChange = (e) => {
-    if (['all', 'rent', 'sale'].includes(e.target.id)) {
-      setSidebardata({ ...sidebardata, type: e.target.id });
+    const { id, value } = e.target;
+
+    if (id === 'type' || id === 'searchTerm' || id === 'bedrooms' || id === 'bathrooms') {
+      setSidebardata({ ...sidebardata, [id]: value });
     }
 
-    if (e.target.id === 'searchTerm') {
-      setSidebardata({ ...sidebardata, searchTerm: e.target.value });
-    }
-
-    if (['parking', 'furnished', 'offer'].includes(e.target.id)) {
+    if (id === 'amenities') {
+      const selected = value.split(',');
       setSidebardata({
         ...sidebardata,
-        [e.target.id]: e.target.checked,
+        parking: selected.includes('parking'),
+        furnished: selected.includes('furnished'),
       });
     }
 
-    if (e.target.id === 'sort_order') {
-      const [sort, order] = e.target.value.split('_');
+    if (id === 'sort_order') {
+      const [sort, order] = value.split('_');
       setSidebardata({ ...sidebardata, sort, order });
     }
   };
@@ -97,16 +105,7 @@ export default function Search() {
       urlParams.set(key, value)
     );
     navigate(`/search?${urlParams.toString()}`);
-  };
-
-  const onShowMoreClick = async () => {
-    const startIndex = listings.length;
-    const urlParams = new URLSearchParams(location.search);
-    urlParams.set('startIndex', startIndex);
-    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/listing/get?${urlParams.toString()}`);
-    const data = await res.json();
-    if (data.length < 9) setShowMore(false);
-    setListings([...listings, ...data]);
+    setCurrentPage(1); // Reset to first page
   };
 
   const toggleCompareMode = () => {
@@ -114,19 +113,26 @@ export default function Search() {
   };
 
   const handleListingSelect = (listing) => {
-    setSelectedListings((prevSelectedListings) => {
-      const alreadySelected = prevSelectedListings.find(
-        (item) => item._id === listing._id
-      );
-      if (alreadySelected) {
-        return prevSelectedListings.filter((item) => item._id !== listing._id);
-      } else if (prevSelectedListings.length < 3) {
-        return [...prevSelectedListings, listing];
-      } else {
+    setSelectedListings((prev) => {
+      const exists = prev.find((item) => item._id === listing._id);
+      if (exists) return prev.filter((item) => item._id !== listing._id);
+      if (prev.length >= 3) {
         alert('You can only compare up to 3 properties.');
-        return prevSelectedListings;
+        return prev;
       }
+      return [...prev, listing];
     });
+  };
+
+  // Pagination logic
+  const indexOfLastListing = currentPage * listingsPerPage;
+  const indexOfFirstListing = indexOfLastListing - listingsPerPage;
+  const currentListings = listings.slice(indexOfFirstListing, indexOfLastListing);
+  const totalPages = Math.ceil(listings.length / listingsPerPage);
+
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
@@ -140,7 +146,7 @@ export default function Search() {
       >
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
           <div className="flex items-center gap-2">
-            <label className="whitespace-nowrap font-semibold">Search:</label>
+            <label className="font-semibold">Search:</label>
             <input
               type="text"
               id="searchTerm"
@@ -151,53 +157,85 @@ export default function Search() {
             />
           </div>
 
-          {/* Type Filters */}
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-col gap-2">
             <label className="font-semibold">Type:</label>
-            {['all', 'rent', 'sale', 'offer'].map((type) => (
-              <label key={type} className="flex items-center gap-1">
-                <input
-                  type="checkbox"
-                  id={type}
-                  className="w-5 accent-yellow-500"
-                  onChange={handleChange}
-                  checked={type === 'offer' ? sidebardata.offer : sidebardata.type === type}
-                />
-                <span className="capitalize">{type}</span>
-              </label>
-            ))}
-          </div>
-
-          {/* Amenities Filters */}
-          <div className="flex flex-wrap gap-3">
-            <label className="font-semibold">Amenities:</label>
-            {['parking', 'furnished'].map((amenity) => (
-              <label key={amenity} className="flex items-center gap-1">
-                <input
-                  type="checkbox"
-                  id={amenity}
-                  className="w-5 accent-yellow-500"
-                  onChange={handleChange}
-                  checked={sidebardata[amenity]}
-                />
-                <span className="capitalize">{amenity}</span>
-              </label>
-            ))}
-          </div>
-
-          {/* Sort Order */}
-          <div className="flex items-center gap-2">
-            <label className="font-semibold">Sort:</label>
             <select
+              id="type"
+              value={sidebardata.type}
               onChange={handleChange}
-              defaultValue="created_at_desc"
+              className="bg-[#1f1f1f] border border-yellow-500 text-yellow-200 rounded-lg p-3 w-full"
+            >
+              <option value="all">All</option>
+              <option value="rent">Rent</option>
+              <option value="sale">Sale</option>
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="font-semibold">Amenities:</label>
+            <select
+              id="amenities"
+              value={[
+                sidebardata.parking ? 'parking' : '',
+                sidebardata.furnished ? 'furnished' : '',
+              ]
+                .filter(Boolean)
+                .join(',')}
+              onChange={handleChange}
+              className="bg-[#1f1f1f] border border-yellow-500 text-yellow-200 rounded-lg p-3 w-full"
+            >
+              <option value="">None</option>
+              <option value="parking">Parking</option>
+              <option value="furnished">Furnished</option>
+              <option value="parking,furnished">Parking + Furnished</option>
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="font-semibold">Bedrooms:</label>
+            <select
+              id="bedrooms"
+              value={sidebardata.bedrooms}
+              onChange={handleChange}
+              className="bg-[#1f1f1f] border border-yellow-500 text-yellow-200 rounded-lg p-3 w-full"
+            >
+              <option value="any">Any</option>
+              <option value="1">1+</option>
+              <option value="2">2+</option>
+              <option value="3">3+</option>
+              <option value="4">4+</option>
+              <option value="5">5+</option>
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="font-semibold">Bathrooms:</label>
+            <select
+              id="bathrooms"
+              value={sidebardata.bathrooms}
+              onChange={handleChange}
+              className="bg-[#1f1f1f] border border-yellow-500 text-yellow-200 rounded-lg p-3 w-full"
+            >
+              <option value="any">Any</option>
+              <option value="1">1+</option>
+              <option value="2">2+</option>
+              <option value="3">3+</option>
+              <option value="4">4+</option>
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="font-semibold">Sort by:</label>
+            <select
               id="sort_order"
-              className="bg-transparent border border-yellow-500 text-yellow-200 rounded-lg p-3"
+              onChange={handleChange}
+              value={`${sidebardata.sort}_${sidebardata.order}`}
+              className="bg-[#1f1f1f] border border-yellow-500 text-yellow-200 rounded-lg p-3 w-full"
             >
               <option value="regularPrice_desc">Price high to low</option>
               <option value="regularPrice_asc">Price low to high</option>
-              <option value="createdAt_desc">Latest</option>
-              <option value="createdAt_asc">Oldest</option>
+              <option value="created_at_desc">Latest</option>
+              <option value="created_at_asc">Oldest</option>
             </select>
           </div>
 
@@ -209,7 +247,7 @@ export default function Search() {
         <div className="mt-4">
           <button
             onClick={toggleCompareMode}
-            className="bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-2 px-4 rounded-full shadow-lg transition duration-300"
+            className="bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-2 px-4 rounded-full shadow-lg transition mt-3 duration-300"
           >
             {compareMode ? 'Cancel Compare' : 'Compare Properties'}
           </button>
@@ -225,7 +263,7 @@ export default function Search() {
         {compareMode ? (
           <Compare selected={selectedListings} />
         ) : (
-          <div className="p-7 flex flex-wrap gap-6">
+          <div className="p-7 flex flex-wrap gap-6 justify-center">
             {!loading && listings.length === 0 && (
               <p className="text-xl text-yellow-400">No listings found.</p>
             )}
@@ -235,7 +273,7 @@ export default function Search() {
               </p>
             )}
             {!loading &&
-              listings.map((listing) => (
+              currentListings.map((listing) => (
                 <ListingItem
                   key={listing._id}
                   listing={listing}
@@ -246,14 +284,22 @@ export default function Search() {
           </div>
         )}
 
-        {showMore && !compareMode && (
-          <div className="flex justify-center p-4">
-            <button
-              onClick={onShowMoreClick}
-              className="text-yellow-300 hover:text-yellow-100 underline"
-            >
-              Show More
-            </button>
+        {/* Pagination */}
+        {!compareMode && totalPages > 1 && (
+          <div className="flex justify-center space-x-2 mt-6 mb-8">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                onClick={() => handlePageChange(page)}
+                className={`px-4 py-2 rounded-full font-semibold ${
+                  page === currentPage
+                    ? 'bg-yellow-400 text-black shadow-lg'
+                    : 'bg-yellow-200 text-black hover:bg-yellow-300'
+                } transition duration-200`}
+              >
+                {page}
+              </button>
+            ))}
           </div>
         )}
       </div>

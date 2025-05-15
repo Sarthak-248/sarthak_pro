@@ -25,18 +25,10 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 
-// ✅ Correct CORS setup
-const allowedOrigins = ['https://admirable-wisp-dce5af.netlify.app']; // ✅ Make sure this is your actual Netlify domain
-
+// ✅ Allow CORS for all origins (with credentials)
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
+  origin: true,           // dynamically reflects the request origin
+  credentials: true,      // allows cookies, Authorization headers
 }));
 
 // ✅ API routes
@@ -44,13 +36,16 @@ app.use('/api/user', userRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/listing', listingRouter);
 
-// ✅ Serve frontend (if full-stack on Render)
-app.use(express.static(path.join(__dirname, '/client/dist')));
+// ✅ Serve static files from ../client/dist
+app.use(express.static(path.join(__dirname, '../client/dist')));
+
+// ✅ Send index.html for all non-API routes
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'client', 'dist', 'index.html'));
+  res.sendFile(path.join(__dirname, '../client/dist/index.html'));
 });
 
-// ✅ Error handling
+
+// ✅ Error handler
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
   const message = err.message || 'Internal Server Error';

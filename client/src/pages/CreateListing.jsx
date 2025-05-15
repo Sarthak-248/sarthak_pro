@@ -1,11 +1,16 @@
 import { useSelector } from 'react-redux';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 
 export default function CreateListing() {
   const { currentUser } = useSelector((state) => state.user);
   const navigate = useNavigate();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const isEditMode = queryParams.get('edit') === 'true';
+  const previousListingId = queryParams.get('listingId');
+
   const [files, setFiles] = useState([]);
   const [formData, setFormData] = useState({
     imageUrls: [],
@@ -26,7 +31,7 @@ export default function CreateListing() {
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleImageSubmit = (e) => {
+  const handleImageSubmit = () => {
     if (files.length > 0 && files.length + formData.imageUrls.length < 7) {
       setUploading(true);
       setImageUploadError(false);
@@ -37,15 +42,14 @@ export default function CreateListing() {
       }
       Promise.all(promises)
         .then((urls) => {
-          setFormData({
-            ...formData,
-            imageUrls: formData.imageUrls.concat(urls),
-          });
-          setImageUploadError(false);
+          setFormData((prev) => ({
+            ...prev,
+            imageUrls: prev.imageUrls.concat(urls),
+          }));
           setUploading(false);
         })
-        .catch((err) => {
-          setImageUploadError('Image upload failed (2 mb max per image)');
+        .catch(() => {
+          setImageUploadError('Image upload failed (2 MB max per image)');
           setUploading(false);
         });
     } else {
@@ -63,239 +67,187 @@ export default function CreateListing() {
     try {
       const response = await axios.post('https://api.cloudinary.com/v1_1/dypvyjfgk/image/upload', formData);
       return response.data.secure_url;
-    } catch (error) {
+    } catch {
       throw new Error('Cloudinary upload failed');
     }
   };
 
   const handleRemoveImage = (index) => {
-    setFormData({
-      ...formData,
-      imageUrls: formData.imageUrls.filter((_, i) => i !== index),
-    });
+    setFormData((prev) => ({
+      ...prev,
+      imageUrls: prev.imageUrls.filter((_, i) => i !== index),
+    }));
   };
 
   const handleChange = (e) => {
     if (e.target.id === 'sale' || e.target.id === 'rent') {
-      setFormData({
-        ...formData,
-        type: e.target.id,
-      });
-    }
-
-    if (['parking', 'furnished', 'offer'].includes(e.target.id)) {
-      setFormData({
-        ...formData,
-        [e.target.id]: e.target.checked,
-      });
-    }
-
-    if (
-      ['number', 'text', 'textarea'].includes(e.target.type)
-    ) {
-      setFormData({
-        ...formData,
-        [e.target.id]: e.target.value,
-      });
+      setFormData({ ...formData, type: e.target.id });
+    } else if (['parking', 'furnished', 'offer'].includes(e.target.id)) {
+      setFormData({ ...formData, [e.target.id]: e.target.checked });
+    } else {
+      setFormData({ ...formData, [e.target.id]: e.target.value });
     }
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  try {
-    if (formData.imageUrls.length < 1)
-      return setError('You must upload at least one image');
+    e.preventDefault();
+    if (formData.imageUrls.length < 1) return setError('You must upload at least one image');
+    if (+formData.regularPrice < +formData.discountPrice) return setError('Discount price must be lower than regular price');
 
-    if (+formData.regularPrice < +formData.discountPrice)
-      return setError('Discount price must be lower than regular price');
+    try {
+      setLoading(true);
+      setError(false);
 
-    setLoading(true);
-    setError(false);
+      const res = await fetch(`/api/listing/create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ ...formData, userRef: currentUser._id }),
+      });
 
-    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/listing/create`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include', // ✅ Ensures cookies (JWT) are sent
-      body: JSON.stringify({
-        ...formData,
-        userRef: currentUser._id,
-      }),
-    });
+      const data = await res.json();
+      if (data.success === false) {
+        setError(data.message);
+        setLoading(false);
+        return;
+      }
 
-    const data = await res.json();
-    setLoading(false);
+      if (isEditMode && previousListingId) {
+        await fetch(`/api/listing/delete/${previousListingId}`, { method: 'DELETE' });
+      }
 
-    if (data.success === false) {
-      setError(data.message);
-      return;
+      navigate(`/listing/${data._id}`);
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
     }
-
-    navigate(`/listing/${data._id}`);
-  } catch (error) {
-    setError(error.message);
-    setLoading(false);
-  }
-};
+  };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-blue-900 via-black to-blue-900 flex justify-center items-center">
+    <main className="min-h-screen bg-gradient-to-b from-black via-blue-950 to-black flex justify-center items-center px-4 py-10">
       <form
         onSubmit={handleSubmit}
-        className="flex flex-col gap-6 p-6 max-w-lg w-full bg-blue-900 rounded-lg shadow-lg"
+        className="bg-white/10 backdrop-blur-xl text-white p-6 sm:p-10 rounded-2xl shadow-2xl w-full max-w-3xl space-y-6 border border-white/10"
       >
-        <h1 className="text-3xl font-semibold text-center text-yellow-500 my-4">
-          Create a Listing
+        <h1 className="text-4xl font-extrabold text-center text-[#FFEB3B] tracking-wide drop-shadow-lg">
+          {isEditMode ? 'Update Listing' : 'Create a Listing'}
         </h1>
-        <div className="flex flex-col gap-4">
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <input
             type="text"
-            placeholder="Name"
-            className="border-2 border-yellow-400 p-3 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
             id="name"
-            maxLength="62"
-            minLength="10"
             required
-            onChange={handleChange}
             value={formData.name}
-          />
-          <textarea
-            placeholder="Description"
-            className="border-2 border-yellow-400 p-3 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
-            id="description"
-            required
             onChange={handleChange}
-            value={formData.description}
+            placeholder="Property Name"
+            className="w-full px-4 py-3 bg-white/20 rounded-lg placeholder-white focus:outline-none focus:ring-2 focus:ring-[#FFEB3B]"
           />
           <input
             type="text"
-            placeholder="Address"
-            className="border-2 border-yellow-400 p-3 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
             id="address"
             required
-            onChange={handleChange}
             value={formData.address}
+            onChange={handleChange}
+            placeholder="Address"
+            className="w-full px-4 py-3 bg-white/20 rounded-lg placeholder-white focus:outline-none focus:ring-2 focus:ring-[#FFEB3B]"
           />
-          <div className="flex gap-6 flex-wrap">
-            {['sale', 'rent', 'parking', 'furnished', 'offer'].map((id) => (
-              <div key={id} className="flex gap-2 items-center">
-                <input
-                  type="checkbox"
-                  id={id}
-                  className="w-5"
-                  onChange={handleChange}
-                  checked={formData[id] ?? formData.type === id}
-                />
-                <span className="text-yellow-400 capitalize">{id === 'sale' ? 'Sell' : id}</span>
-              </div>
-            ))}
-          </div>
-          <div className="flex flex-wrap gap-6">
-            {[
-              { id: 'bedrooms', label: 'Beds' },
-              { id: 'bathrooms', label: 'Baths' },
-              { id: 'regularPrice', label: 'Regular price', note: formData.type === 'rent' ? '($ / month)' : '' },
-            ].map(({ id, label, note }) => (
-              <div key={id} className="flex items-center gap-2">
-                <input
-                  type="number"
-                  id={id}
-                  min="1"
-                  max="10000000"
-                  required
-                  className="p-3 border-2 border-yellow-400 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                  onChange={handleChange}
-                  value={formData[id]}
-                />
-                <div className="flex flex-col items-center">
-                  <p className="text-yellow-400">{label}</p>
-                  {note && <span className="text-xs text-yellow-300">{note}</span>}
-                </div>
-              </div>
-            ))}
-            {formData.offer && (
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  id="discountPrice"
-                  min="0"
-                  max="10000000"
-                  required
-                  className="p-3 border-2 border-yellow-400 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                  onChange={handleChange}
-                  value={formData.discountPrice}
-                />
-                <div className="flex flex-col items-center">
-                  <p className="text-yellow-400">Discounted price</p>
-                  {formData.type === 'rent' && (
-                    <span className="text-xs text-yellow-300">($ / month)</span>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
         </div>
 
-        <div className="flex flex-col gap-4">
-          <p className="font-semibold text-yellow-400">
-            Images:
-            <span className="font-normal text-yellow-400 ml-2">
-              The first image will be the cover (max 6)
-            </span>
-          </p>
-          <div className="flex gap-4">
+        <textarea
+          id="description"
+          required
+          value={formData.description}
+          onChange={handleChange}
+          placeholder="Description"
+          className="w-full px-4 py-3 bg-white/20 rounded-lg placeholder-white focus:outline-none focus:ring-2 focus:ring-[#FFEB3B] min-h-[100px]"
+        />
+
+        <div className="flex flex-wrap gap-4 justify-between text-sm sm:text-base">
+          {['sale', 'rent', 'parking', 'furnished', 'offer'].map((id) => (
+            <label key={id} className="flex items-center gap-2 text-[#FFEB3B] font-medium">
+              <input
+                type="checkbox"
+                id={id}
+                onChange={handleChange}
+                checked={formData[id] ?? formData.type === id}
+                className="accent-[#FFD700] w-5 h-5"
+              />
+              <span className="capitalize">{id === 'sale' ? 'Sell' : id}</span>
+            </label>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          {[
+            { id: 'bedrooms', label: 'Bedrooms' },
+            { id: 'bathrooms', label: 'Bathrooms' },
+            { id: 'regularPrice', label: 'Regular Price ($)' },
+          ].map(({ id, label }) => (
             <input
-              onChange={(e) => setFiles(e.target.files)}
-              className="p-3 border-2 border-yellow-400 rounded w-full bg-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
-              type="file"
-              id="images"
-              accept="image/*"
-              multiple
+              key={id}
+              type="number"
+              id={id}
+              value={formData[id]}
+              onChange={handleChange}
+              placeholder={label}
+              className="px-4 py-3 bg-white/20 rounded-lg placeholder-white focus:outline-none focus:ring-2 focus:ring-[#FFEB3B]"
             />
+          ))}
+          {formData.offer && (
+            <input
+              type="number"
+              id="discountPrice"
+              value={formData.discountPrice}
+              onChange={handleChange}
+              placeholder="Discount Price ($)"
+              className="px-4 py-3 bg-white/20 rounded-lg placeholder-white focus:outline-none focus:ring-2 focus:ring-[#FFEB3B]"
+            />
+          )}
+        </div>
+
+        {/* Image Upload */}
+        <div className="space-y-2">
+          <p className="text-lg font-medium text-[#FFD700]">Upload Images (max 6):</p>
+          <div className="flex flex-wrap items-center gap-4">
+            <input type="file" accept="image/*" multiple onChange={(e) => setFiles(e.target.files)} className="text-white" />
             <button
               type="button"
-              disabled={uploading}
               onClick={handleImageSubmit}
-              className="p-3 text-white bg-yellow-400 rounded-lg uppercase hover:bg-yellow-500 disabled:opacity-80"
+              disabled={uploading}
+              className="bg-[#FFEB3B] text-black font-bold px-5 py-2 rounded-lg hover:bg-[#FFF000] transition disabled:opacity-50"
             >
               {uploading ? 'Uploading...' : 'Upload'}
             </button>
           </div>
-          <p className="text-red-700 text-sm">{imageUploadError && imageUploadError}</p>
+          {imageUploadError && <p className="text-red-400 text-sm">{imageUploadError}</p>}
 
-          {formData.imageUrls.length > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4">
-              {formData.imageUrls.map((url, index) => (
-                <div
-                  key={url}
-                  className="relative group border-2 border-yellow-300 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden bg-white"
+          {/* Image Preview */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4">
+            {formData.imageUrls.map((url, i) => (
+              <div key={i} className="relative">
+                <img src={url} alt={`img-${i}`} className="rounded-lg object-cover w-full h-32" />
+                <button
+                  type="button"
+                  onClick={() => handleRemoveImage(i)}
+                  className="absolute top-1 right-1 bg-red-600 text-white rounded-full px-2"
                 >
-                  <img
-                    src={url}
-                    alt={`Uploaded ${index}`}
-                    className="w-full h-40 object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveImage(index)}
-                    className="absolute top-2 right-2 bg-red-600 text-white px-2 py-1 text-xs rounded hover:bg-red-700 transition duration-200 opacity-80 group-hover:opacity-100"
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <button
-            disabled={loading || uploading}
-            className="p-3 bg-yellow-400 text-black rounded-lg uppercase hover:bg-yellow-500 disabled:opacity-80"
-          >
-            {loading ? 'Creating...' : 'Create listing'}
-          </button>
-          {error && <p className="text-red-700 text-sm">{error}</p>}
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
+
+        <button
+          disabled={loading || uploading}
+          className="w-full bg-[#FFEB3B] hover:bg-[#FFF000] text-black font-bold py-3 rounded-lg shadow-lg transition duration-300"
+        >
+          {loading ? (isEditMode ? 'Updating...' : 'Creating...') : isEditMode ? 'Update Listing' : 'Create Listing'}
+        </button>
+
+        {error && <p className="text-red-500 text-center">{error}</p>}
       </form>
     </main>
   );

@@ -12,5 +12,6 @@ router.post('/update/:id', verifyToken, upload.single('image'), updateListing);
 router.delete('/delete/:id', verifyToken, deleteListing);
 router.get('/get/:id', getListing);
 router.get('/get', getListings);
+router.get('/edit-listing', updateListing);
 
 export default router;

@@ -7,30 +7,23 @@ const RecentlyVisited = () => {
 
   useEffect(() => {
     const ids = JSON.parse(localStorage.getItem('recentlyViewed')) || [];
-    
+
     const fetchListings = async () => {
       try {
-        if (ids.length === 0) {
-          console.log('No recently viewed listings.');
-          return; // No IDs in localStorage, so no need to fetch
-        }
-        
-        console.log('Fetching listings with IDs:', ids);
+        if (ids.length === 0) return;
+
         const results = await Promise.all(
           ids.map(async (id) => {
-            
-            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/listing/get/${id}`);
-            console.log(`Response for listing ${id}:`, res);
-            if (!res.ok) {
-              throw new Error(`Failed to fetch listing ${id}`);
-            }
+            const res = await fetch(`/api/listing/get/${id}`);
+            if (!res.ok) throw new Error(`Failed to fetch listing ${id}`);
             return await res.json();
           })
         );
-        setRecentListings(results);
+
+        setRecentListings(results.reverse()); // Latest first
       } catch (err) {
-        console.error('Error loading recently visited listings:', err);
-        setError('Failed to load recently visited listings. Please try again later.');
+        console.error('Error loading listings:', err);
+        setError('Failed to load recently viewed listings.');
       }
     };
 
@@ -39,7 +32,7 @@ const RecentlyVisited = () => {
 
   if (error) {
     return (
-      <div className="p-6 bg-white rounded-lg shadow-md mt-10 text-center text-red-500">
+      <div className="p-6 bg-red-100 rounded-lg shadow-lg mt-10 text-center text-red-600 font-semibold">
         {error}
       </div>
     );
@@ -47,20 +40,28 @@ const RecentlyVisited = () => {
 
   if (recentListings.length === 0) {
     return (
-      <div className="p-6 bg-white rounded-lg shadow-md mt-10 text-center">
-        No recently viewed properties found.
+      <div className="h-screen flex items-center justify-center bg-gradient-to-r from-blue-950 via-blue-900 to-black text-white">
+        <p className="text-2xl font-semibold">No recently viewed properties found.</p>
       </div>
     );
   }
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow-md mt-10">
-      <h2 className="text-2xl font-bold text-blue-900 mb-4">
-        Recently Viewed Properties
+    <div className="min-h-screen bg-gradient-to-br from-blue-950 via-blue-900 to-black text-white px-6 py-12">
+      <h2 className="text-4xl font-extrabold mb-6 text-center text-yellow-400 drop-shadow-md tracking-wide">
+        ✨ Recently Viewed ✨
       </h2>
-      <div className="flex flex-wrap gap-4">
+
+      <div className="flex overflow-x-auto space-x-6 py-4 scrollbar-thin scrollbar-thumb-yellow-500 scrollbar-track-transparent">
         {recentListings.map((listing) => (
-          <ListingItem key={listing._id} listing={listing} />
+          <div
+            key={listing._id}
+            className="min-w-[320px] transform transition duration-300 hover:scale-105 hover:shadow-[0_0_25px_#facc15] bg-gradient-to-tr from-yellow-200/10 via-white/5 to-yellow-200/10 rounded-xl p-1"
+          >
+            <div className="bg-white rounded-xl overflow-hidden shadow-lg">
+              <ListingItem listing={listing} />
+            </div>
+          </div>
         ))}
       </div>
     </div>
