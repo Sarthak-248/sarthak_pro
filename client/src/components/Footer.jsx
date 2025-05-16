@@ -28,7 +28,7 @@ import {
             
             {/* Company */}
             <div>
-              <h2 className="text-2xl font-extrabold mb-4 text-yellow-400">Sarthak's Estate</h2>
+              <h2 className="text-2xl font-extrabold mb-4 text-yellow-400">Sarthak Heights</h2>
               <p className="text-sm text-gray-300 leading-relaxed">
                 Helping you unlock the door to your dream home. Listings, insights, and deals — all in one place.
               </p>
@@ -81,7 +81,7 @@ import {
   
           {/* Bottom Text */}
           <div className="mt-10 text-center text-sm text-gray-400">
-            © {new Date().getFullYear()} Sarthak's Estate. All rights reserved.
+            © {new Date().getFullYear()} Sarthak Heights. All rights reserved.
           </div>
         </footer>
   

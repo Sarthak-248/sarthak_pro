@@ -57,7 +57,7 @@ export default function Home() {
           Find your <span className="typing-wrapper text-yellow-500">perfect place!</span>
         </h1>
         <p className="text-yellow-200 mt-4 text-sm sm:text-base">
-          Sarthak's Estate guides you to your ideal home. Explore a diverse selection<br /> of properties,
+          Sarthak Heights guides you to your ideal home. Explore a diverse selection<br /> of properties,
           thoughtfully curated to meet your unique needs.
         </p>
         <Link
@@ -86,7 +86,7 @@ export default function Home() {
       </div>
 
       {/* Swiper Section - Featured Listings */}
-      {offerListings?.length > 0 && (
+      {/* {offerListings?.length > 0 && (
         <div className="bg-black px-4">
           <Swiper navigation className="w-full max-w-6xl bg-black mx-auto">
             {offerListings.map((listing) => (
@@ -102,7 +102,7 @@ export default function Home() {
             ))}
           </Swiper>
         </div>
-      )}
+      )} */}
 
       {/* Footer */}
       <div className="bg-gradient-to-b from-black via-blue-950 to-black mt-32">

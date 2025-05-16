@@ -14,13 +14,20 @@ const RecentlyVisited = () => {
 
         const results = await Promise.all(
           ids.map(async (id) => {
-            const res = await fetch(`/api/listing/get/${id}`);
-            if (!res.ok) throw new Error(`Failed to fetch listing ${id}`);
-            return await res.json();
+            try {
+              const res = await fetch(`/api/listing/get/${id}`);
+              if (!res.ok) throw new Error(`Listing ${id} not found`);
+              return await res.json();
+            } catch (err) {
+              console.warn(`Skipping invalid listing ID: ${id}`);
+              return null; // Skip if not found
+            }
           })
         );
 
-        setRecentListings(results.reverse()); // Latest first
+        // Filter out null results (i.e., failed fetches)
+        const validListings = results.filter((listing) => listing !== null);
+        setRecentListings(validListings.reverse()); // Latest first
       } catch (err) {
         console.error('Error loading listings:', err);
         setError('Failed to load recently viewed listings.');

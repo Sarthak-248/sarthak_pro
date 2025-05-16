@@ -43,8 +43,8 @@ export default function Header() {
         <Link to="/" className="flex items-center gap-2">
           <img src={Logo} alt="Logo" className="h-8 sm:h-10 object-contain" />
           <h1 className="font-extrabold text-lg sm:text-2xl tracking-wide drop-shadow-lg">
-            <span className="text-yellow-300">Sarthak's</span>
-            <span className="text-yellow-500">Estate</span>
+            <span className="text-yellow-300">Sarthak </span>
+            <span className="text-yellow-500">Heights</span>
           </h1>
         </Link>
 
