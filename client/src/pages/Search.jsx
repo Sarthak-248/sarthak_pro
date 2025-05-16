@@ -97,6 +97,10 @@ export default function Search() {
       setSidebardata({ ...sidebardata, sort, order });
     }
   };
+  const handleRemoveListing = (id) => {
+  setSelectedListings((prev) => prev.filter((listing) => listing._id !== id));
+};
+
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -261,7 +265,7 @@ export default function Search() {
         </h1>
 
         {compareMode ? (
-          <Compare selected={selectedListings} />
+<Compare selected={selectedListings} onRemove={handleRemoveListing} />
         ) : (
           <div className="p-7 flex flex-wrap gap-6 justify-center">
             {!loading && listings.length === 0 && (

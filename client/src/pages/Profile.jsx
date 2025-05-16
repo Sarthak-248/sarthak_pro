@@ -298,17 +298,60 @@ export default function Profile() {
 
         {/* Listings View */}
         {showOnlyListings && (
-          <div className="text-center mb-8">
-            <h2 className="text-4xl font-extrabold text-yellow-400 mb-4">Your Listings</h2>
-            <button
-              onClick={() => setShowOnlyListings(false)}
-              className="text-yellow-400 border border-yellow-500 px-8 py-3 text-lg rounded-full hover:bg-yellow-400 hover:text-black transition font-semibold"
-            >
-              ← Back to Profile
-            </button>
-          </div>
-        )}
+  <div className="w-full min-h-screen bg-gradient-to-br from-blue-800 via-black to-blue-950 px-4 ">
+    <div className="text-center mb-8">
+      <h2 className="text-4xl font-extrabold text-yellow-400 mb-4">Your Listings</h2>
+      <button
+        onClick={() => setShowOnlyListings(false)}
+        className="text-yellow-400 border border-yellow-500 px-8 py-3 text-lg rounded-full hover:bg-yellow-400 hover:text-black transition font-semibold"
+      >
+        ← Back to Profile
+      </button>
+    </div>
 
+    {userListings?.length > 0 ? (
+      <div className="w-full grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+        {userListings.map((listing) => (
+          <div
+            key={listing._id}
+            className="bg-white rounded-2xl shadow-2xl border border-yellow-400 overflow-hidden hover:shadow-yellow-300 transition-shadow duration-300"
+          >
+            <Link to={`/listing/${listing._id}`}>
+              <img
+                src={listing.imageUrls[0]}
+                alt="Listing cover"
+                className="w-full h-52 object-cover hover:scale-105 transition-transform duration-300"
+              />
+            </Link>
+            <div className="p-6 space-y-2">
+              <h3 className="text-2xl font-bold text-blue-900 truncate">{listing.name}</h3>
+              <p className="text-gray-600 text-sm truncate">{listing.address}</p>
+              <div className="flex justify-between items-center mt-4">
+                <Link
+                  to={`/create-listing?edit=true&listingId=${listing._id}`}
+                  className="bg-blue-600 hover:bg-blue-500 text-white text-xs px-5 py-2 rounded-full font-semibold transition"
+                >
+                  ✏️ Edit
+                </Link>
+                <button
+                  onClick={() => handleListingDelete(listing._id)}
+                  className="bg-red-600 hover:bg-red-500 text-white text-xs px-5 py-2 rounded-full font-semibold transition"
+                >
+                  🗑 Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    ) : (
+      <p className="text-center text-gray-300 text-lg mt-10">
+        You have no listings yet. Start by creating your first listing!
+      </p>
+    )}
+  </div>
+)}
+{/* 
         {userListings?.length > 0 && showOnlyListings && (
           <div className="w-full grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 px-4">
             {userListings.map((listing) => (
@@ -344,7 +387,7 @@ export default function Profile() {
               </div>
             ))}
           </div>
-        )}
+        )} */}
 
         {/* Listings Error */}
         {showListingsError && (

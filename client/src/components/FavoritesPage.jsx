@@ -1,64 +1,101 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 
 export default function FavoriteListings() {
+  const currentUser = useSelector((state) => state.user.currentUser);
+  const location = useLocation();
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchFavorites = async () => {
-      setLoading(true);
-      setError(null);
+  const hiddenRoutes = ['/sign-in', '/sign-up'];
 
-      try {
-        const favoriteIds = JSON.parse(localStorage.getItem('favorites')) || [];
+  function addToRecentlyViewed(listing) {
+    let recentlyViewed = JSON.parse(localStorage.getItem('recentlyViewed')) || [];
+    recentlyViewed = recentlyViewed.filter(item => item._id !== listing._id);
+    recentlyViewed.unshift(listing);
+    if (recentlyViewed.length > 10) recentlyViewed.pop();
+    localStorage.setItem('recentlyViewed', JSON.stringify(recentlyViewed));
+  }
 
-        if (favoriteIds.length === 0) {
-          setFavorites([]);
-          setLoading(false);
-          return;
-        }
-
-        const listings = [];
-
-        for (const id of favoriteIds) {
-          try {
-            const res = await axios.get(`/api/listing/get/${id}`);
-            listings.push(res.data);
-          } catch (err) {
-            console.error(`❌ Failed to fetch listing ${id}:`, err.message);
-          }
-        }
-
-        setFavorites(listings);
-      } catch (err) {
-        console.error('❌ Error fetching favorites:', err);
-        setError('Failed to load favorite listings.');
-      } finally {
+  const fetchFavorites = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const favoriteIds = JSON.parse(localStorage.getItem('favorites')) || [];
+      if (favoriteIds.length === 0) {
+        setFavorites([]);
         setLoading(false);
+        return;
       }
+      const listings = [];
+      for (const id of favoriteIds) {
+        try {
+          const res = await axios.get(`/api/listing/get/${id}`);
+          listings.push(res.data);
+        } catch (err) {
+          console.error(`❌ Failed to fetch listing ${id}:`, err.message);
+        }
+      }
+      setFavorites(listings);
+    } catch (err) {
+      setError('Failed to load favorite listings.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchFavorites();
+
+    const handleFavoritesUpdated = () => fetchFavorites();
+    const onStorageChange = (event) => {
+      if (event.key === 'favorites') fetchFavorites();
     };
 
-    fetchFavorites();
+    window.addEventListener('favoritesUpdated', handleFavoritesUpdated);
+    window.addEventListener('storage', onStorageChange);
+
+    return () => {
+      window.removeEventListener('favoritesUpdated', handleFavoritesUpdated);
+      window.removeEventListener('storage', onStorageChange);
+    };
   }, []);
 
-  if (loading)
+  // Show loading and error states as usual
+  if (loading) {
     return (
-      <p className="text-center text-white p-8 bg-gradient-to-b from-blue-900 via-black to-blue-900 min-h-screen">
+      <div className="text-center text-white p-8 bg-gradient-to-b from-blue-950 via-black to-blue-950 min-h-screen flex items-center justify-center">
         Loading favorites...
-      </p>
+      </div>
     );
-  if (error)
-    return (
-      <p className="text-red-600 text-center bg-gradient-to-b from-blue-900 via-black to-blue-900 min-h-screen p-8">
-        {error}
-      </p>
-    );
+  }
 
+  if (error) {
+    return (
+      <div className="text-red-600 text-center bg-gradient-to-b from-blue-950 via-black to-blue-950 min-h-screen p-8 flex items-center justify-center">
+        {error}
+      </div>
+    );
+  }
+
+  // IF user NOT logged in OR on signin/signup page, show gradient + message
+  if (!currentUser || hiddenRoutes.includes(location.pathname)) {
+    return (
+     <div className="flex flex-col items-center justify-start min-h-screen bg-gradient-to-b from-blue-950 via-black to-blue-950 px-4 text-center pt-20">
+  <p className="text-yellow-400 mt-5 text-3xl font-extrabold max-w-md">
+    Please Login first!!
+  </p>
+</div>
+
+    );
+  }
+
+  // Otherwise show the favorite listings grid
   return (
-    <div className="p-4 bg-gradient-to-b from-blue-900 via-black to-blue-900 min-h-screen">
+    <div className="p-4 bg-gradient-to-b from-blue-950 via-black to-blue-950 min-h-screen">
       <h2 className="text-4xl mt-6 text-center text-yellow-400 font-bold mb-10">
         ★ Favourite Listings ★
       </h2>
@@ -72,7 +109,11 @@ export default function FavoriteListings() {
       ) : (
         <div className="grid mt-10 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {favorites.map((listing) => (
-            <Link to={`/listing/${listing._id}`} key={listing._id}>
+            <Link
+              to={`/listing/${listing._id}`}
+              key={listing._id}
+              onClick={() => addToRecentlyViewed(listing)}
+            >
               <div className="bg-white rounded-xl p-4 transition-transform transform hover:scale-105 shadow-lg border-4 border-transparent hover:border-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-500 hover:border-opacity-100 hover:shadow-yellow-500/30">
                 <h3 className="font-bold text-lg mb-2 text-blue-900">
                   {listing.name}

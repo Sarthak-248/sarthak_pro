@@ -15,6 +15,7 @@ import Faq from './pages/Faq';
 import RecentlyVisited from './components/RecentlyVisited'; // Adjust path if needed
 import FavoritesPage from './components/FavoritesPage';
 import ComparePage from './components/Compare'; // NEW
+import Contact from './pages/ContactUs';
 
 export default function App() {
   return (
@@ -30,6 +31,7 @@ export default function App() {
         <Route path='/favorites' element={<FavoritesPage />} />
         <Route path='/faq' element={<Faq />} />
         <Route path='/compare' element={<ComparePage />} /> {/* NEW */}
+        <Route path='/contact' element={<Contact />} />
 
         <Route element={<PrivateRoute />}>
           <Route path='/profile' element={<Profile />} />

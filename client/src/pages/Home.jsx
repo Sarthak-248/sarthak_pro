@@ -76,9 +76,10 @@ export default function Home() {
       {/* Review Slider Section - Background Change Applied Here */}
       <div className="bg-blue-950 py-8 px-4 sm:px-6 mb-20">
         <div className="max-w-6xl mx-auto rounded-xl shadow-xl py-6 px-4">
-          <h2 className="text-center text-xl sm:text-2xl font-bold text-yellow-300 mb-4">
-            What Our Clients Say
-          </h2>
+          <h2 className="text-center text-6xl sm:text-4xl font-extrabold text-yellow-400 mb-6">
+  Trusted By Our Clients
+</h2>
+
           <div className="h-[160px] sm:h-[180px]">
             <ReviewSlider />
           </div>

@@ -1,6 +1,11 @@
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Autoplay } from 'swiper/modules';
 import { FaArrowLeft, FaArrowRight, FaStar } from 'react-icons/fa';
+import AdaniImage from '../assets/images/ADANI.png';
+import AmbaniImage from '../assets/images/AMBANI.png';
+import DamaniImage from '../assets/images/DAMANI.png';
+import JhunjhunwalaImage from '../assets/images/JHUNJHUNWALA.jpg';
+
 import 'swiper/css';
 import 'swiper/css/navigation';
 
@@ -8,32 +13,31 @@ const reviews = [
   {
     name: 'Gautam Adani',
     comment: 'An incredibly smooth experience. Highly satisfied with the platform!',
-    photo: 'https://i.pravatar.cc/150?img=12',
+    photo: AdaniImage,
   },
   {
     name: 'Mukesh Ambani',
     comment: 'Easy to use and very reliable listings. Would definitely recommend.',
-    photo: 'https://i.pravatar.cc/150?img=14',
+    photo: AmbaniImage,
   },
   {
     name: 'Damani',
     comment: 'Customer support was top-notch. Helped me through every step.',
-    photo: 'https://i.pravatar.cc/150?img=15',
+    photo: DamaniImage,
   },
-  {
-    name: 'C.K Birla',
-    comment: 'Found my apartment faster than expected. Love the clean UI!',
-    photo: 'https://i.pravatar.cc/150?img=20',
-  },
+ {
+  name: 'Rakesh Jhunjhunwala',
+  comment: 'A game-changer in the real estate market. I found my dream home!',
+  photo: JhunjhunwalaImage,
+ }
+  
 ];
 
 export default function ReviewSlider() {
   return (
     <div className="relative w-full bg-blue-950 px-4 sm:px-6 lg:px-8 py-6 sm:py-8 rounded-xl shadow-md">
       <div className="max-w-3xl mx-auto">
-        <h2 className="text-2xl sm:text-3xl font-bold text-yellow-300 text-center mb-4">
-          What People Say
-        </h2>
+        
 
         {/* Navigation Buttons */}
         <div className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10">
