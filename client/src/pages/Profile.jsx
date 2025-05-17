@@ -184,7 +184,7 @@ export default function Profile() {
   };
 
   return (
-    <div className="bg-gradient-to-r from-blue-900 via-black to-blue-900 p-6 rounded-lg">
+    <div className="min-h-screen w-full bg-gradient-to-r  from-blue-900 via-black to-blue-900 p-6 rounded-lg">
       {!showOnlyListings && (
         <h1 className="text-4xl font-bold text-center text-yellow-500 mb-8">Profile</h1>
       )}
